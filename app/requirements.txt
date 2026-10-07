@@ -1,5 +1,6 @@
-# App dependencies (Deliverable E)
+# App dependencies (Portfolio Showcase)
 streamlit>=1.28.0
 pandas>=2.0.0
 numpy>=1.24.0
 altair>=5.0.0
+pillow>=9.0.0

@@ -1,15 +1,15 @@
-# Addis Ababa Ride Demand Forecasting Challenge
-**Team Quatro** | Qiyas / IADE AI Training Program Hackathon
+# Addis Ababa Ride Demand Forecasting System
+**Team Quatro (Led by Samuel Mitiku)** | Qiyas / IADE AI Training Program Hackathon
 
-An end-to-end data science and forecasting system predicting hourly ride requests across 12 zones in Addis Ababa for November 1–14, 2025. The project integrates raw trip logs with hourly weather readings and a multi-zone city events calendar, adhering strictly to time-ordered chronological validation, leakage prevention, and automated data integrity checks.
+An enterprise-grade, end-to-end data science and forecasting system predicting hourly ride requests across 12 zones in Addis Ababa for November 1–14, 2025. The project integrates raw trip logs with hourly weather readings and a multi-zone city events calendar, adhering strictly to time-ordered chronological validation, leakage prevention, and automated data integrity checks.
 
 ---
 
-## 👥 Team Quatro Members
+## 👥 Project Leadership & Team
+- **Samuel Mitiku** — Project & Team Lead, ML Systems Architect
 - **Dagim Asnake** — Data Lead & Integration Pipeline
-- **Modeling & Machine Learning Lead** — Model Architecture, Time-Series Splits & Evaluation
-- **Analysis & Visualizations Lead** — Exploratory Data Analysis & 12-Figure Pack
-- **Deployment Lead** — Streamlit Forecaster Demo Application
+- **Team Quatro Members** — Machine Learning, EDA & Presentation
+
 
 ---
 
