@@ -26,36 +26,8 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# THEME STATE  (system / dark / light)
+# DESIGN TOKENS — Light Mode
 # -----------------------------------------------------------------------------
-if "theme" not in st.session_state:
-    st.session_state.theme = "system"
-
-# ── Palette definitions ────────────────────────────────────────────────────────
-_DARK = {
-    "--bg-page":        "#0f1117",
-    "--bg-surface":     "#161b27",
-    "--bg-elevated":    "#1c2333",
-    "--border":         "#252d3d",
-    "--text-primary":   "#e8eaf0",
-    "--text-secondary": "#8892a4",
-    "--text-muted":     "#5a6478",
-    "--accent":         "#4c6ef5",
-    "--accent-light":   "#748ffc",
-    "--accent-dim":     "rgba(76,110,245,0.13)",
-    "--success":        "#2f9e44",
-    "--success-dim":    "rgba(47,158,68,0.11)",
-    "--warning":        "#d97706",
-    "--warning-dim":    "rgba(217,119,6,0.11)",
-    "--danger":         "#ef4444",
-    "--chart-accent":   "#4c6ef5",
-    "--chart-muted":    "#3d4a5e",
-    "--chart-danger":   "#fa5252",
-    "--chart-success":  "#51cf66",
-    "--chart-grid":     "#1c2333",
-    "--chart-label":    "#8892a4",
-}
-
 _LIGHT = {
     "--bg-page":        "#f4f6fb",
     "--bg-surface":     "#ffffff",
@@ -82,26 +54,12 @@ _LIGHT = {
 
 
 def _vars_block(palette: dict) -> str:
-    return "\n".join(f"        {k}: {v};" for k, v in palette.items())
+    return "\n".join(f"    {k}: {v};" for k, v in palette.items())
 
 
-def build_css(theme: str) -> str:
-    """Return the full <style> block for the chosen theme."""
-
-    if theme == "dark":
-        root_block = f":root {{\n{_vars_block(_DARK)}\n    }}"
-        system_override = ""
-    elif theme == "light":
-        root_block = f":root {{\n{_vars_block(_LIGHT)}\n    }}"
-        system_override = ""
-    else:  # "system" — dark default, light via media query
-        root_block = f":root {{\n{_vars_block(_DARK)}\n    }}"
-        system_override = f"""
-    @media (prefers-color-scheme: light) {{
-        :root {{
-{_vars_block(_LIGHT)}
-        }}
-    }}"""
+def build_css() -> str:
+    """Return the full <style> block — always light mode."""
+    root_block = f":root {{\n{_vars_block(_LIGHT)}\n}}"
 
     return f"""
 <style>
@@ -511,22 +469,18 @@ h1, h2, h3, h4, h5, h6 {{
 """
 
 
-# Inject theme CSS immediately
-st.markdown(build_css(st.session_state.theme), unsafe_allow_html=True)
+# Inject light-mode CSS
+st.markdown(build_css(), unsafe_allow_html=True)
 
-# Chart color helpers (theme-aware, read after session state is known)
-def chart_colors():
-    p = _LIGHT if st.session_state.theme == "light" else _DARK
-    # system: default to dark palette for chart colors (charts can't read CSS vars)
-    return {
-        "accent":   p["--chart-accent"],
-        "muted":    p["--chart-muted"],
-        "danger":   p["--chart-danger"],
-        "success":  p["--chart-success"],
-        "grid":     p["--chart-grid"],
-        "label":    p["--chart-label"],
-        "bg":       "transparent",
-    }
+# Chart colour palette (light mode)
+_CP = {
+    "accent":  _LIGHT["--chart-accent"],
+    "muted":   _LIGHT["--chart-muted"],
+    "danger":  _LIGHT["--chart-danger"],
+    "success": _LIGHT["--chart-success"],
+    "grid":    _LIGHT["--chart-grid"],
+    "label":   _LIGHT["--chart-label"],
+}
 
 
 # -----------------------------------------------------------------------------
@@ -604,22 +558,6 @@ except Exception as e:
 # -----------------------------------------------------------------------------
 with st.sidebar:
 
-    # ── Theme Toggle ──────────────────────────────────────────────────────────
-    st.markdown("<div class='theme-toggle-label'>Appearance</div>", unsafe_allow_html=True)
-    theme_cols = st.columns(3)
-    _OPTS = [("☀️ Light", "light"), ("💻 System", "system"), ("🌙 Dark", "dark")]
-    for col, (label, val) in zip(theme_cols, _OPTS):
-        with col:
-            if st.button(
-                label,
-                key=f"theme_btn_{val}",
-                use_container_width=True,
-                type="primary" if st.session_state.theme == val else "secondary",
-            ):
-                st.session_state.theme = val
-                st.rerun()
-
-    st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
     # ── Author Card ───────────────────────────────────────────────────────────
     st.markdown(
@@ -735,8 +673,8 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "About the Author",
 ])
 
-# Retrieve current chart palette once per render
-cp = chart_colors()
+# Chart palette alias
+cp = _CP
 
 # =============================================================================
 # TAB 1 — LIVE FORECASTER
@@ -754,9 +692,9 @@ with tab1:
     with k2:
         st.markdown(f"""
         <div class="kpi-card green">
-            <div class="kpi-label">Recommended Fleet</div>
-            <div class="kpi-value">{recommended_drivers:,}<span class="kpi-unit"> drivers</span></div>
-            <div class="kpi-delta">{total_trips:,.0f} trips across 24 h</div>
+            <div class="kpi-label">Total Forecasted Trips</div>
+            <div class="kpi-value">{total_trips:,.0f}<span class="kpi-unit"> trips</span></div>
+            <div class="kpi-delta">{peak_trips:.0f} trips at peak · {recommended_drivers:,} drivers needed</div>
         </div>""", unsafe_allow_html=True)
     with k3:
         st.markdown(f"""
