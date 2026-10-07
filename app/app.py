@@ -67,7 +67,7 @@ def build_css() -> str:
 
 /* ── Variables ── */
 {root_block}
-{system_override}
+
 
 /* ── Base ── */
 html, body, [class*="css"] {{
