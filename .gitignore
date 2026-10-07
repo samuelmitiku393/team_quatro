@@ -1,0 +1,22 @@
+# Ignore raw datasets (per Rule 9/10, raw is immutable)
+data/raw/*.csv
+
+# Whitelist required submission deliverables
+!submission/team_quatro_submission.csv
+!data/processed/master_train.csv
+!data/processed/master_test.csv
+!data/processed/data_dictionary_master.csv
+
+# Whitelist required model bundle (Deliverable D)
+!models/final_model.joblib
+
+# Ignore environments & cache (Rule 6.3/6.4)
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+*.tmp
+~$*

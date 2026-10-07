@@ -1,0 +1,32 @@
+column_name,data_type,source_table,description,derivation
+record_id / row_id,string,ride_demand_train.csv / ride_demand_test.csv,Unique record or row identifier,Original join key for evaluation and scoring
+zone,categorical,ride_demand_*.csv,Pickup zone in Addis Ababa (12 canonical zones),Canonicalized from raw labels (mapped typos and casing to uppercase canonical list)
+pickup_hour,datetime,ride_demand_*.csv,Hour start timestamp in East Africa Time (EAT UTC+3),Parsed from mixed formats (ISO-8601 day-first dd/mm/yyyy and UTC+3 offset strings)
+trips,float,ride_demand_train.csv,Target variable: ride requests in zone-hour (train only),Ground truth ride demand; rows with negative or invalid values removed
+temp_c,float,weather_hourly.csv,Air temperature in degrees Celsius (0 NaNs),Converted from UTC to EAT; Fahrenheit readings (>45 C) converted via (F-32)*5/9; missing hours resolved via continuous hourly grid time-series linear interpolation and ffill/bfill
+rain_mm,float,weather_hourly.csv,Rainfall in mm during the preceding hour (0 NaNs),Converted from UTC to EAT; negative sentinels (-9999.0) resolved; missing hours imputed via time-series interpolation with 0.0 mm dry default
+humidity_pct,float,weather_hourly.csv,Relative humidity percentage (0-100) (0 NaNs),Converted from UTC to EAT; bounded to valid physical range [0 100]; missing hours resolved via time-series linear interpolation and ffill/bfill
+wind_kmh,float,weather_hourly.csv,Wind speed in km/h (0 NaNs),Converted from UTC to EAT; bounded >= 0; missing hours resolved via time-series linear interpolation and ffill/bfill
+rain_3h,float,weather_hourly.csv,Cumulative rolling 3-hour precipitation in mm,Rolling 3-hour sum of hourly rain_mm
+rain_class,float,weather_hourly.csv,Precipitation intensity class (0=None 1=Light 2=Moderate 3=Heavy),Binned rain_mm: 0mm -> 0; <2.5mm -> 1; <7.6mm -> 2; >=7.6mm -> 3
+is_rainy,float,weather_hourly.csv,Binary indicator for presence of precipitation,Indicator: 1.0 if rain_mm > 0 else 0.0
+event_any,float,events_calendar.csv,Binary flag indicating active event or proximity within 48 hours,Computed: 1.0 if active_window > 0 or hours_until > 0 or hours_since > 0
+event_active_window,float,events_calendar.csv,Binary flag indicating current hour is within event start to end,Interval join matching zone-hours where start <= pickup_hour <= end
+hours_until_event,float,events_calendar.csv,Hours remaining until start of nearest upcoming event (horizon 48h),Forward as-of merge between zone timestamp and upcoming confirmed event start
+hours_since_event,float,events_calendar.csv,Hours elapsed since conclusion of nearest previous event (horizon 48h),Backward as-of merge between zone timestamp and previous confirmed event end
+event_public_holiday,float,events_calendar.csv,Binary indicator for public holiday (including +/- 2h buffer),Derived from event_type == 'public_holiday' matching zone-hours
+event_school_break,float,events_calendar.csv,Binary indicator for school break period,Derived from event_type == 'school_break' matching zone-hours
+event_football_match,float,events_calendar.csv,Binary indicator for football match (including +/- 2h buffer),Derived from event_type == 'football_match' matching zone-hours
+event_concert,float,events_calendar.csv,Binary indicator for concert event window,Derived from event_type == 'concert' matching zone-hours
+event_conference,float,events_calendar.csv,Binary indicator for conference event window,Derived from event_type == 'conference' matching zone-hours
+event_exhibition,float,events_calendar.csv,Binary indicator for exhibition event window,Derived from event_type == 'exhibition' matching zone-hours
+event_road_closure,float,events_calendar.csv,Binary indicator for road closure event window,Derived from event_type == 'road_closure' matching zone-hours
+event_sports_run,float,events_calendar.csv,Binary indicator for sports run or marathon event window,Derived from event_type == 'sports_run' matching zone-hours
+event_attendance,float,events_calendar.csv,Expected crowd size or attendance at active event,Extracted numeric digits from expected_attendance free-text field
+hour,int,Derived,Hour of day (0 to 23),pickup_hour.dt.hour
+dayofweek,int,Derived,Day of week (0=Monday to 6=Sunday),pickup_hour.dt.dayofweek
+month,int,Derived,Month of year (1 to 12),pickup_hour.dt.month
+day,int,Derived,Day of month (1 to 31),pickup_hour.dt.day
+weekofyear,int,Derived,ISO calendar week number (1 to 52),pickup_hour.dt.isocalendar().week
+is_weekend,int,Derived,Binary indicator for weekend day (Saturday or Sunday),pickup_hour.dt.dayofweek >= 5
+days_elapsed,float,Derived,Continuous linear time trend in days from 2025-01-01,(pickup_hour - 2025-01-01).total_seconds() / 86400
