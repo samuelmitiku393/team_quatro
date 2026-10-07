@@ -26,332 +26,508 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# DESIGN SYSTEM — Professional Slate + Indigo Theme
+# THEME STATE  (system / dark / light)
 # -----------------------------------------------------------------------------
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+if "theme" not in st.session_state:
+    st.session_state.theme = "system"
 
-    /* ── Root Variables ── */
-    :root {
-        --bg-page:      #0f1117;
-        --bg-surface:   #161b27;
-        --bg-elevated:  #1c2333;
-        --border:       #252d3d;
-        --border-focus: #3b5bdb;
-        --text-primary: #e8eaf0;
-        --text-secondary: #8892a4;
-        --text-muted:   #5a6478;
-        --accent:       #4c6ef5;
-        --accent-light: #748ffc;
-        --accent-dim:   rgba(76, 110, 245, 0.12);
-        --success:      #2f9e44;
-        --success-dim:  rgba(47, 158, 68, 0.10);
-        --warning:      #e67700;
-        --warning-dim:  rgba(230, 119, 0, 0.10);
-        --danger:       #c92a2a;
-        --radius-sm:    6px;
-        --radius-md:    10px;
-        --radius-lg:    14px;
+# ── Palette definitions ────────────────────────────────────────────────────────
+_DARK = {
+    "--bg-page":        "#0f1117",
+    "--bg-surface":     "#161b27",
+    "--bg-elevated":    "#1c2333",
+    "--border":         "#252d3d",
+    "--text-primary":   "#e8eaf0",
+    "--text-secondary": "#8892a4",
+    "--text-muted":     "#5a6478",
+    "--accent":         "#4c6ef5",
+    "--accent-light":   "#748ffc",
+    "--accent-dim":     "rgba(76,110,245,0.13)",
+    "--success":        "#2f9e44",
+    "--success-dim":    "rgba(47,158,68,0.11)",
+    "--warning":        "#d97706",
+    "--warning-dim":    "rgba(217,119,6,0.11)",
+    "--danger":         "#ef4444",
+    "--chart-accent":   "#4c6ef5",
+    "--chart-muted":    "#3d4a5e",
+    "--chart-danger":   "#fa5252",
+    "--chart-success":  "#51cf66",
+    "--chart-grid":     "#1c2333",
+    "--chart-label":    "#8892a4",
+}
+
+_LIGHT = {
+    "--bg-page":        "#f4f6fb",
+    "--bg-surface":     "#ffffff",
+    "--bg-elevated":    "#eef1f8",
+    "--border":         "#dde3ef",
+    "--text-primary":   "#111827",
+    "--text-secondary": "#4b5563",
+    "--text-muted":     "#9ca3af",
+    "--accent":         "#3451d1",
+    "--accent-light":   "#4c6ef5",
+    "--accent-dim":     "rgba(52,81,209,0.10)",
+    "--success":        "#15803d",
+    "--success-dim":    "rgba(21,128,61,0.09)",
+    "--warning":        "#b45309",
+    "--warning-dim":    "rgba(180,83,9,0.09)",
+    "--danger":         "#dc2626",
+    "--chart-accent":   "#3451d1",
+    "--chart-muted":    "#9ca3af",
+    "--chart-danger":   "#ef4444",
+    "--chart-success":  "#16a34a",
+    "--chart-grid":     "#eef1f8",
+    "--chart-label":    "#6b7280",
+}
+
+
+def _vars_block(palette: dict) -> str:
+    return "\n".join(f"        {k}: {v};" for k, v in palette.items())
+
+
+def build_css(theme: str) -> str:
+    """Return the full <style> block for the chosen theme."""
+
+    if theme == "dark":
+        root_block = f":root {{\n{_vars_block(_DARK)}\n    }}"
+        system_override = ""
+    elif theme == "light":
+        root_block = f":root {{\n{_vars_block(_LIGHT)}\n    }}"
+        system_override = ""
+    else:  # "system" — dark default, light via media query
+        root_block = f":root {{\n{_vars_block(_DARK)}\n    }}"
+        system_override = f"""
+    @media (prefers-color-scheme: light) {{
+        :root {{
+{_vars_block(_LIGHT)}
+        }}
+    }}"""
+
+    return f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* ── Variables ── */
+{root_block}
+{system_override}
+
+/* ── Base ── */
+html, body, [class*="css"] {{
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--text-primary) !important;
+}}
+.stApp {{
+    background-color: var(--bg-page) !important;
+}}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {{
+    background-color: var(--bg-surface) !important;
+    border-right: 1px solid var(--border) !important;
+}}
+[data-testid="stSidebar"] > div {{
+    background-color: var(--bg-surface) !important;
+}}
+[data-testid="stSidebar"] * {{
+    color: var(--text-primary) !important;
+}}
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] .stNumberInput label,
+[data-testid="stSidebar"] .stCheckbox span,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span {{
+    color: var(--text-secondary) !important;
+}}
+
+/* ── Streamlit main container ── */
+.main .block-container {{
+    background-color: var(--bg-page) !important;
+    padding-top: 1.5rem !important;
+}}
+section[data-testid="stMainBlockContainer"] {{
+    background-color: var(--bg-page) !important;
+}}
+
+/* ── Inputs & widgets ── */
+.stSelectbox > div > div,
+.stDateInput > div > div,
+.stNumberInput > div > div {{
+    background-color: var(--bg-elevated) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}}
+.stSlider [data-baseweb="slider"] {{
+    color: var(--accent) !important;
+}}
+
+/* ── Headings ── */
+h1, h2, h3, h4, h5, h6 {{
+    color: var(--text-primary) !important;
+}}
+
+/* ── Page Header Banner ── */
+.page-header {{
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 1.1rem;
+    border-left: 4px solid var(--accent);
+}}
+.page-title {{
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem 0;
+}}
+.page-subtitle {{
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.7rem 0;
+    line-height: 1.5;
+}}
+.page-header-right {{
+    text-align: right;
+    flex-shrink: 0;
+    padding-left: 1.5rem;
+}}
+.page-header-right .zone-name {{
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+}}
+.page-header-right .zone-date {{
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}}
+
+/* ── Tag Pills ── */
+.tag {{
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-right: 0.35rem;
+    margin-bottom: 0.2rem;
+    letter-spacing: 0.01em;
+}}
+.tag-blue  {{ background: var(--accent-dim);   color: var(--accent-light); border: 1px solid var(--accent-dim); }}
+.tag-green {{ background: var(--success-dim);  color: var(--success);      border: 1px solid var(--success-dim); }}
+.tag-amber {{ background: var(--warning-dim);  color: var(--warning);      border: 1px solid var(--warning-dim); }}
+.tag-slate {{ background: var(--bg-elevated);  color: var(--text-muted);   border: 1px solid var(--border); }}
+
+/* ── KPI Cards ── */
+.kpi-card {{
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    border-left: 3px solid var(--accent);
+    height: 100%;
+    box-sizing: border-box;
+}}
+.kpi-card.green {{ border-left-color: var(--success); }}
+.kpi-card.amber {{ border-left-color: var(--warning); }}
+.kpi-card.slate {{ border-left-color: var(--border); }}
+.kpi-label {{
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}}
+.kpi-value {{
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.03em;
+}}
+.kpi-unit {{
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    letter-spacing: 0;
+}}
+.kpi-delta {{
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}}
+
+/* ── Section Heading ── */
+.section-heading {{
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.9rem;
+}}
+
+/* ── Context Info Bar ── */
+.context-bar {{
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    font-size: 0.81rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}}
+.context-bar strong {{ color: var(--text-primary); }}
+
+/* ── Author Card (Sidebar) ── */
+.author-card {{
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+}}
+.author-name {{
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1px;
+}}
+.author-role {{
+    font-size: 0.73rem;
+    color: var(--accent-light);
+    font-weight: 500;
+    margin-bottom: 0.55rem;
+}}
+.author-bio {{
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.7rem;
+}}
+
+/* ── Profile Card (About tab) ── */
+.profile-card {{
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+    padding: 1.4rem 1.5rem;
+}}
+.profile-name {{
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 2px;
+}}
+.profile-title {{
+    font-size: 0.8rem;
+    color: var(--accent-light);
+    font-weight: 500;
+    margin-bottom: 0.9rem;
+}}
+.profile-bio {{
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 0.9rem;
+}}
+.profile-skills-label {{
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}}
+.profile-skill-row {{
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 0.28rem 0;
+    border-bottom: 1px solid var(--border);
+}}
+.profile-skill-row:last-of-type {{ border-bottom: none; }}
+
+/* ── Stat Row ── */
+.stat-row {{
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1.1rem;
+}}
+.stat-item {{
+    flex: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 0.9rem;
+    text-align: center;
+}}
+.stat-number {{
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-light);
+    letter-spacing: -0.03em;
+}}
+.stat-label {{
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}}
+
+/* ── Theme Toggle ── */
+.theme-toggle-label {{
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+}}
+.theme-toggle-row {{
+    display: flex;
+    gap: 4px;
+    margin-bottom: 0.9rem;
+}}
+.theme-btn {{
+    flex: 1;
+    text-align: center;
+    padding: 0.28rem 0;
+    font-size: 0.73rem;
+    font-weight: 500;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}}
+.theme-btn.active {{
+    background: var(--accent-dim);
+    color: var(--accent-light);
+    border-color: var(--accent);
+}}
+
+/* ── Link Buttons ── */
+.link-btn {{
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.27rem 0.65rem;
+    border-radius: 5px;
+    font-size: 0.74rem;
+    font-weight: 500;
+    text-decoration: none !important;
+    margin-right: 0.3rem;
+    transition: opacity 0.15s;
+}}
+.link-btn:hover {{ opacity: 0.8; }}
+.link-btn-blue  {{ background: var(--accent-dim);   color: var(--accent-light) !important; border: 1px solid var(--accent-dim); }}
+.link-btn-green {{ background: var(--success-dim);  color: var(--success) !important;      border: 1px solid var(--success-dim); }}
+
+/* ── Divider ── */
+.divider {{ border: none; border-top: 1px solid var(--border); margin: 1.1rem 0; }}
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {{
+    background: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border) !important;
+    gap: 0;
+}}
+.stTabs [data-baseweb="tab"] {{
+    color: var(--text-secondary) !important;
+    font-size: 0.83rem !important;
+    font-weight: 500 !important;
+    padding: 0.55rem 1rem !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}}
+.stTabs [aria-selected="true"] {{
+    color: var(--text-primary) !important;
+    border-bottom: 2px solid var(--accent) !important;
+    background: transparent !important;
+}}
+.stTabs [data-testid="stTabPanel"] {{ padding-top: 1.25rem; }}
+
+/* ── Expander ── */
+.stExpander {{
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    background: var(--bg-surface) !important;
+}}
+.stExpander summary, .stExpander [data-testid="stExpanderToggleIcon"] {{
+    color: var(--text-secondary) !important;
+}}
+
+/* ── DataFrames ── */
+.stDataFrame {{
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+}}
+
+/* ── Alert & info boxes ── */
+.stAlert {{ border-radius: 8px !important; }}
+[data-testid="stAlert"] {{
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-secondary) !important;
+}}
+
+/* ── Download button ── */
+.stDownloadButton button {{
+    border: 1px solid var(--border) !important;
+    background: var(--bg-elevated) !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px !important;
+}}
+
+/* ── Footer ── */
+.page-footer {{
+    text-align: center;
+    padding: 1.1rem 0 0.6rem;
+    font-size: 0.77rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 0.5rem;
+}}
+.page-footer a {{
+    color: var(--accent-light) !important;
+    text-decoration: none;
+}}
+</style>
+"""
+
+
+# Inject theme CSS immediately
+st.markdown(build_css(st.session_state.theme), unsafe_allow_html=True)
+
+# Chart color helpers (theme-aware, read after session state is known)
+def chart_colors():
+    p = _LIGHT if st.session_state.theme == "light" else _DARK
+    # system: default to dark palette for chart colors (charts can't read CSS vars)
+    return {
+        "accent":   p["--chart-accent"],
+        "muted":    p["--chart-muted"],
+        "danger":   p["--chart-danger"],
+        "success":  p["--chart-success"],
+        "grid":     p["--chart-grid"],
+        "label":    p["--chart-label"],
+        "bg":       "transparent",
     }
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-        color: var(--text-primary);
-    }
-
-    /* ── Page background ── */
-    .stApp { background-color: var(--bg-page); }
-
-    /* ── Sidebar ── */
-    [data-testid="stSidebar"] {
-        background-color: var(--bg-surface) !important;
-        border-right: 1px solid var(--border) !important;
-    }
-    [data-testid="stSidebar"] * { color: var(--text-primary) !important; }
-
-    /* ── Header Banner ── */
-    .page-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 1.5rem 1.75rem;
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        margin-bottom: 1.25rem;
-        border-left: 4px solid var(--accent);
-    }
-    .page-header-left {}
-    .page-title {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        letter-spacing: -0.02em;
-        margin: 0 0 0.25rem 0;
-    }
-    .page-subtitle {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        margin: 0 0 0.8rem 0;
-        line-height: 1.5;
-    }
-    .page-header-right {
-        text-align: right;
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        flex-shrink: 0;
-        padding-left: 1.5rem;
-    }
-    .page-header-right strong {
-        color: var(--text-secondary);
-        display: block;
-        font-size: 0.82rem;
-        margin-bottom: 2px;
-    }
-
-    /* ── Tag Pills ── */
-    .tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 0.2rem 0.6rem;
-        border-radius: 4px;
-        font-size: 0.73rem;
-        font-weight: 500;
-        margin-right: 0.4rem;
-        margin-bottom: 0.25rem;
-        letter-spacing: 0.01em;
-    }
-    .tag-blue  { background: var(--accent-dim);   color: var(--accent-light); border: 1px solid rgba(76,110,245,0.2); }
-    .tag-green { background: var(--success-dim);  color: #69db7c;              border: 1px solid rgba(47,158,68,0.2); }
-    .tag-amber { background: var(--warning-dim);  color: #ffd43b;              border: 1px solid rgba(230,119,0,0.2); }
-    .tag-slate { background: rgba(88,101,122,0.12); color: var(--text-secondary); border: 1px solid var(--border); }
-
-    /* ── KPI Cards ── */
-    .kpi-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 1.1rem 1.25rem;
-        position: relative;
-        overflow: hidden;
-        height: 100%;
-    }
-    .kpi-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0;
-        width: 3px; height: 100%;
-        background: var(--accent);
-        border-radius: 2px 0 0 2px;
-    }
-    .kpi-card.green::before { background: var(--success); }
-    .kpi-card.amber::before { background: var(--warning); }
-    .kpi-card.slate::before { background: #495057; }
-    .kpi-label {
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--text-muted);
-        margin-bottom: 0.45rem;
-    }
-    .kpi-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        line-height: 1;
-        margin-bottom: 0.35rem;
-        letter-spacing: -0.03em;
-    }
-    .kpi-unit {
-        font-size: 0.95rem;
-        font-weight: 400;
-        color: var(--text-secondary);
-        letter-spacing: 0;
-    }
-    .kpi-delta {
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        margin-top: 0.1rem;
-    }
-
-    /* ── Section Heading ── */
-    .section-heading {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        padding-bottom: 0.6rem;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 1rem;
-        letter-spacing: -0.01em;
-    }
-
-    /* ── Context Info Bar ── */
-    .context-bar {
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 0.75rem 1rem;
-        font-size: 0.82rem;
-        color: var(--text-secondary);
-        line-height: 1.6;
-    }
-    .context-bar strong { color: var(--text-primary); }
-
-    /* ── Author Profile Card ── */
-    .author-card {
-        background: var(--bg-elevated);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        border-left: 3px solid var(--accent);
-        padding: 1rem 1.1rem;
-        margin-bottom: 1.25rem;
-    }
-    .author-name {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 2px;
-    }
-    .author-role {
-        font-size: 0.75rem;
-        color: var(--accent-light);
-        font-weight: 500;
-        margin-bottom: 0.6rem;
-    }
-    .author-bio {
-        font-size: 0.77rem;
-        color: var(--text-secondary);
-        line-height: 1.55;
-        margin-bottom: 0.75rem;
-    }
-
-    /* ── Profile Card (Tab 4) ── */
-    .profile-card {
-        background: var(--bg-elevated);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        border-left: 3px solid var(--accent);
-        padding: 1.5rem;
-    }
-    .profile-name {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 3px;
-        letter-spacing: -0.02em;
-    }
-    .profile-title {
-        font-size: 0.82rem;
-        color: var(--accent-light);
-        font-weight: 500;
-        margin-bottom: 1rem;
-    }
-    .profile-bio {
-        font-size: 0.84rem;
-        color: var(--text-secondary);
-        line-height: 1.65;
-        margin-bottom: 1rem;
-    }
-    .profile-skills-title {
-        font-size: 0.73rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--text-muted);
-        margin-bottom: 0.5rem;
-    }
-    .profile-skill-item {
-        font-size: 0.81rem;
-        color: var(--text-secondary);
-        padding: 0.3rem 0;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .profile-skill-item:last-child { border-bottom: none; }
-
-    /* ── Stat Row (Tab 2 hero numbers) ── */
-    .stat-row {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
-    }
-    .stat-item {
-        flex: 1;
-        background: var(--bg-elevated);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        padding: 0.9rem 1rem;
-        text-align: center;
-    }
-    .stat-number {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: var(--accent-light);
-        letter-spacing: -0.03em;
-    }
-    .stat-label {
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        margin-top: 2px;
-    }
-
-    /* ── Divider ── */
-    .divider {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 1.25rem 0;
-    }
-
-    /* ── Footer ── */
-    .page-footer {
-        text-align: center;
-        padding: 1.25rem 0 0.75rem;
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        border-top: 1px solid var(--border);
-        margin-top: 0.5rem;
-    }
-    .page-footer a {
-        color: var(--accent-light);
-        text-decoration: none;
-    }
-
-    /* ── Link Buttons ── */
-    .link-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 0.3rem 0.7rem;
-        border-radius: var(--radius-sm);
-        font-size: 0.76rem;
-        font-weight: 500;
-        text-decoration: none;
-        margin-right: 0.4rem;
-        transition: opacity 0.15s;
-    }
-    .link-btn:hover { opacity: 0.8; }
-    .link-btn-blue  { background: var(--accent-dim); color: var(--accent-light); border: 1px solid rgba(76,110,245,0.25); }
-    .link-btn-green { background: var(--success-dim); color: #69db7c; border: 1px solid rgba(47,158,68,0.25); }
-
-    /* ── Streamlit element overrides ── */
-    div[data-testid="stMetric"]        { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 1rem; }
-    div[data-testid="stDataFrame"]     { border-radius: var(--radius-sm); overflow: hidden; }
-    .stTabs [data-baseweb="tab-list"]  { background: var(--bg-surface); border-bottom: 1px solid var(--border); gap: 0; }
-    .stTabs [data-baseweb="tab"]       { color: var(--text-secondary) !important; font-size: 0.85rem; font-weight: 500; padding: 0.6rem 1rem; border-radius: 0; }
-    .stTabs [aria-selected="true"]     { color: var(--text-primary) !important; border-bottom: 2px solid var(--accent) !important; background: transparent !important; }
-    .stTabs [data-testid="stTabPanel"] { padding-top: 1.5rem; }
-    .stExpander                        { border: 1px solid var(--border) !important; border-radius: var(--radius-md) !important; background: var(--bg-surface) !important; }
-    .stDownloadButton button           { border: 1px solid var(--border) !important; background: var(--bg-elevated) !important; color: var(--text-secondary) !important; font-size: 0.82rem !important; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # -----------------------------------------------------------------------------
 # ASSET PATH RESOLUTION & CONSTANTS
@@ -369,27 +545,20 @@ MIN_DATE = datetime.date(2025, 11, 1)
 MAX_DATE = datetime.date(2025, 11, 14)
 
 ZONE_MAP = {
-    "Arat Kilo":    "ARAT KILO",
-    "Ayat":         "AYAT",
-    "Bole":         "BOLE",
-    "CMC":          "CMC",
-    "Gerji":        "GERJI",
-    "Kazanchis":    "KAZANCHIS",
-    "Kolfe Keranio":"KOLFE",
-    "Lideta":       "LIDETA",
-    "Megenagna":    "MEGENAGNA",
-    "Merkato":      "MERKATO",
-    "Piassa":       "PIASSA",
-    "Sarbet":       "SARBET",
+    "Arat Kilo":     "ARAT KILO",
+    "Ayat":          "AYAT",
+    "Bole":          "BOLE",
+    "CMC":           "CMC",
+    "Gerji":         "GERJI",
+    "Kazanchis":     "KAZANCHIS",
+    "Kolfe Keranio": "KOLFE",
+    "Lideta":        "LIDETA",
+    "Megenagna":     "MEGENAGNA",
+    "Merkato":       "MERKATO",
+    "Piassa":        "PIASSA",
+    "Sarbet":        "SARBET",
 }
 DISPLAY_ZONES = list(ZONE_MAP.keys())
-
-# Chart color constants (matches CSS theme)
-ACCENT      = "#4c6ef5"
-ACCENT_LIGHT= "#748ffc"
-SLATE       = "#3d4a5e"
-DANGER      = "#fa5252"
-SUCCESS     = "#51cf66"
 
 # -----------------------------------------------------------------------------
 # DATA LOADING
@@ -434,6 +603,25 @@ except Exception as e:
 # SIDEBAR
 # -----------------------------------------------------------------------------
 with st.sidebar:
+
+    # ── Theme Toggle ──────────────────────────────────────────────────────────
+    st.markdown("<div class='theme-toggle-label'>Appearance</div>", unsafe_allow_html=True)
+    theme_cols = st.columns(3)
+    _OPTS = [("☀️ Light", "light"), ("💻 System", "system"), ("🌙 Dark", "dark")]
+    for col, (label, val) in zip(theme_cols, _OPTS):
+        with col:
+            if st.button(
+                label,
+                key=f"theme_btn_{val}",
+                use_container_width=True,
+                type="primary" if st.session_state.theme == val else "secondary",
+            ):
+                st.session_state.theme = val
+                st.rerun()
+
+    st.markdown("<hr class='divider'>", unsafe_allow_html=True)
+
+    # ── Author Card ───────────────────────────────────────────────────────────
     st.markdown(
         """
         <div class="author-card">
@@ -444,50 +632,38 @@ with st.sidebar:
                 leakage-proof cross-validation, and operational dispatch
                 system design for Addis Ababa's ride-hailing network.
             </div>
-            <a href="https://github.com/samuelmitiku393/team_quatro" target="_blank" class="link-btn link-btn-blue">
-                ↗ GitHub Repo
-            </a>
-            <a href="https://linkedin.com" target="_blank" class="link-btn link-btn-green">
-                ↗ LinkedIn
-            </a>
+            <a href="https://github.com/samuelmitiku393/team_quatro"
+               target="_blank" class="link-btn link-btn-blue">↗ GitHub</a>
+            <a href="https://linkedin.com"
+               target="_blank" class="link-btn link-btn-green">↗ LinkedIn</a>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    # ── Controls ─────────────────────────────────────────────────────────────
     st.markdown("**Forecast Controls**")
     selected_zone_display = st.selectbox("Zone", DISPLAY_ZONES, index=2, label_visibility="collapsed")
     selected_db_zone = ZONE_MAP[selected_zone_display]
 
     selected_date = st.date_input(
-        "Date",
-        value=MIN_DATE,
-        min_value=MIN_DATE,
-        max_value=MAX_DATE,
+        "Date", value=MIN_DATE, min_value=MIN_DATE, max_value=MAX_DATE,
         label_visibility="collapsed",
-        help="Nov 1–14, 2025 test period.",
+        help="Test period: November 1–14, 2025",
     )
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-
     st.markdown("**Fleet Parameters**")
-    trips_per_driver = st.slider(
-        "Driver productivity (trips/hr)", 0.8, 2.2, 1.3, 0.1,
-        help="City benchmark: ~1.3 trips per driver hour."
-    )
-    fare_per_trip = st.number_input(
-        "Avg fare per trip (ETB)", 100, 800, 250, 25,
-        help="Historical average fare across all zones."
-    )
+    trips_per_driver = st.slider("Driver productivity (trips/hr)", 0.8, 2.2, 1.3, 0.1)
+    fare_per_trip    = st.number_input("Avg fare per trip (ETB)", 100, 800, 250, 25)
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-
     st.markdown("**Scenario Testing**")
-    apply_surge = st.checkbox("Severe weather shock (+25%)", value=False)
+    apply_surge      = st.checkbox("Severe weather shock (+25%)", value=False)
     surge_multiplier = 1.25 if apply_surge else 1.0
 
 # -----------------------------------------------------------------------------
-# DATA SLICE FOR SELECTED ZONE + DATE
+# DATA SLICE
 # -----------------------------------------------------------------------------
 mask = (
     (ALL_PREDICTIONS["zone"] == selected_db_zone)
@@ -496,7 +672,7 @@ mask = (
 day_forecast = ALL_PREDICTIONS[mask].copy().sort_values("pickup_hour")
 
 if day_forecast.empty:
-    st.warning("No data found for the selected zone and date. Try a different combination.")
+    st.warning("No data found for the selected zone and date.")
     st.stop()
 
 day_forecast["effective_trips"] = day_forecast["predicted_trips"] * surge_multiplier
@@ -519,11 +695,9 @@ if not EVENTS_DF.empty:
         r_zone = str(row.get("zone", "")).upper()
         s_date = row["start_dt"].date() if pd.notna(row["start_dt"]) else None
         e_date = row["end_dt"].date()   if pd.notna(row["end_dt"])   else s_date
-        if ("CITYWIDE" in r_zone or "ALL" in r_zone or selected_db_zone in r_zone):
+        if "CITYWIDE" in r_zone or "ALL" in r_zone or selected_db_zone in r_zone:
             if s_date and e_date and (s_date <= selected_date <= e_date):
-                day_events.append(
-                    f"{row.get('event_name', 'Event')} — {row.get('event_type', 'public')}"
-                )
+                day_events.append(f"{row.get('event_name','Event')} — {row.get('event_type','public')}")
 
 # -----------------------------------------------------------------------------
 # PAGE HEADER
@@ -534,17 +708,17 @@ st.markdown(
         <div class="page-header-left">
             <div class="page-title">Addis Ababa Ride Demand Forecaster</div>
             <div class="page-subtitle">
-                Operational dispatch &amp; demand planning platform powered by LightGBM ·
+                Operational dispatch &amp; demand planning · LightGBM ·
                 <strong>Team Quatro</strong> (Led by Samuel Mitiku)
             </div>
             <span class="tag tag-blue">Competition Finalist</span>
-            <span class="tag tag-green">RMSE 15.72 → 47.9% below baseline</span>
+            <span class="tag tag-green">RMSE 15.72 · 47.9% below baseline</span>
             <span class="tag tag-slate">12 Zones · Nov 2025</span>
-            <span class="tag tag-amber">Zero-leakage chronological CV</span>
+            <span class="tag tag-amber">Zero-leakage CV</span>
         </div>
         <div class="page-header-right">
-            <strong>{selected_zone_display}</strong>
-            {selected_date.strftime('%a, %b %d %Y')}
+            <span class="zone-name">{selected_zone_display}</span>
+            <span class="zone-date">{selected_date.strftime('%a, %b %d %Y')}</span>
         </div>
     </div>
     """,
@@ -561,56 +735,47 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "About the Author",
 ])
 
+# Retrieve current chart palette once per render
+cp = chart_colors()
+
 # =============================================================================
-# TAB 1 ─ LIVE OPERATIONAL FORECASTER
+# TAB 1 — LIVE FORECASTER
 # =============================================================================
 with tab1:
 
-    # KPI row
     k1, k2, k3, k4 = st.columns(4)
-
     with k1:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Peak Demand Hour</div>
-                <div class="kpi-value">{peak_hour:02d}<span class="kpi-unit">:00</span></div>
-                <div class="kpi-delta">{peak_trips:.0f} trips at peak</div>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-label">Peak Demand Hour</div>
+            <div class="kpi-value">{peak_hour:02d}<span class="kpi-unit">:00</span></div>
+            <div class="kpi-delta">{peak_trips:.0f} trips at peak</div>
+        </div>""", unsafe_allow_html=True)
     with k2:
-        st.markdown(
-            f"""
-            <div class="kpi-card green">
-                <div class="kpi-label">Recommended Fleet</div>
-                <div class="kpi-value">{recommended_drivers:,}<span class="kpi-unit"> drivers</span></div>
-                <div class="kpi-delta">{total_trips:,.0f} trips across 24 h</div>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="kpi-card green">
+            <div class="kpi-label">Recommended Fleet</div>
+            <div class="kpi-value">{recommended_drivers:,}<span class="kpi-unit"> drivers</span></div>
+            <div class="kpi-delta">{total_trips:,.0f} trips across 24 h</div>
+        </div>""", unsafe_allow_html=True)
     with k3:
-        st.markdown(
-            f"""
-            <div class="kpi-card amber">
-                <div class="kpi-label">Projected Revenue</div>
-                <div class="kpi-value">{projected_revenue:,}<span class="kpi-unit"> ETB</span></div>
-                <div class="kpi-delta">{fare_per_trip} ETB avg fare/trip</div>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="kpi-card amber">
+            <div class="kpi-label">Projected Revenue</div>
+            <div class="kpi-value">{projected_revenue:,}<span class="kpi-unit"> ETB</span></div>
+            <div class="kpi-delta">{fare_per_trip} ETB avg fare/trip</div>
+        </div>""", unsafe_allow_html=True)
     with k4:
-        weather_icon = "🌧" if total_rain_mm > 0 else "☀"
-        weather_label = f"{total_rain_mm:.1f} mm" if total_rain_mm > 0 else "Clear"
-        st.markdown(
-            f"""
-            <div class="kpi-card slate">
-                <div class="kpi-label">Weather</div>
-                <div class="kpi-value" style="font-size:1.5rem;">{weather_icon} {weather_label}</div>
-                <div class="kpi-delta">{min_temp:.1f}°C – {max_temp:.1f}°C (EAT)</div>
-            </div>
-            """, unsafe_allow_html=True)
+        w_icon  = "🌧" if total_rain_mm > 0 else "☀"
+        w_label = f"{total_rain_mm:.1f} mm" if total_rain_mm > 0 else "Clear"
+        st.markdown(f"""
+        <div class="kpi-card slate">
+            <div class="kpi-label">Weather</div>
+            <div class="kpi-value" style="font-size:1.5rem;">{w_icon} {w_label}</div>
+            <div class="kpi-delta">{min_temp:.1f}°C – {max_temp:.1f}°C (EAT)</div>
+        </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    # ── 24-Hour Demand Curve ──────────────────────────────────────────────────
     st.markdown(
         f"<div class='section-heading'>24-Hour Demand Forecast — {selected_zone_display}, "
         f"{selected_date.strftime('%B %d, %Y')}</div>",
@@ -619,16 +784,16 @@ with tab1:
 
     chart_df = day_forecast.copy()
 
-    # Confidence-style fill between 0 and effective_trips (area chart)
+    # Gradient fill area chart
     area = (
         alt.Chart(chart_df)
         .mark_area(
-            line={"color": ACCENT, "strokeWidth": 2},
+            line={"color": cp["accent"], "strokeWidth": 2},
             color=alt.Gradient(
                 gradient="linear",
                 stops=[
-                    alt.GradientStop(color=f"{ACCENT}55", offset=0),
-                    alt.GradientStop(color=f"{ACCENT}08", offset=1),
+                    alt.GradientStop(color=f"{cp['accent']}55", offset=0),
+                    alt.GradientStop(color=f"{cp['accent']}08", offset=1),
                 ],
                 x1=1, x2=1, y1=1, y2=0,
             ),
@@ -638,13 +803,13 @@ with tab1:
                     title="Hour of Day (EAT)",
                     scale=alt.Scale(domain=[0, 23]),
                     axis=alt.Axis(format="d", tickCount=12, grid=False,
-                                  labelColor="#8892a4", titleColor="#8892a4")),
+                                  labelColor=cp["label"], titleColor=cp["label"])),
             y=alt.Y("effective_trips:Q",
                     title="Projected Trips",
-                    axis=alt.Axis(grid=True, gridColor="#1c2333",
-                                  labelColor="#8892a4", titleColor="#8892a4")),
+                    axis=alt.Axis(grid=True, gridColor=cp["grid"],
+                                  labelColor=cp["label"], titleColor=cp["label"])),
             tooltip=[
-                alt.Tooltip("hour_label:N", title="Time (EAT)"),
+                alt.Tooltip("hour_label:N",     title="Time (EAT)"),
                 alt.Tooltip("effective_trips:Q", title="Forecast Trips", format=".1f"),
                 alt.Tooltip("temp_c:Q",          title="Temp (°C)",      format=".1f"),
                 alt.Tooltip("rain_mm:Q",          title="Rain (mm)",      format=".2f"),
@@ -654,65 +819,50 @@ with tab1:
 
     dots = (
         alt.Chart(chart_df)
-        .mark_circle(size=45, color=ACCENT_LIGHT, opacity=0.85)
+        .mark_circle(size=40, color=cp["accent"], opacity=0.9)
         .encode(
             x="hour:Q",
             y="effective_trips:Q",
             tooltip=[
-                alt.Tooltip("hour_label:N",       title="Time (EAT)"),
-                alt.Tooltip("effective_trips:Q",   title="Forecast Trips", format=".1f"),
+                alt.Tooltip("hour_label:N",     title="Time (EAT)"),
+                alt.Tooltip("effective_trips:Q", title="Forecast Trips", format=".1f"),
             ],
         )
     )
 
-    # Peak annotation
     peak_df = pd.DataFrame([{
         "hour": peak_hour,
         "effective_trips": peak_trips,
-        "label": f"Peak  {peak_trips:.0f} trips",
+        "label": f"Peak  {peak_trips:.0f}",
     }])
-    peak_rule = (
-        alt.Chart(peak_df)
-        .mark_rule(color=DANGER, strokeDash=[3, 3], strokeWidth=1, opacity=0.8)
-        .encode(x="hour:Q")
-    )
-    peak_dot = (
-        alt.Chart(peak_df)
-        .mark_point(color=DANGER, size=180, shape="triangle-up", filled=True)
-        .encode(x="hour:Q", y="effective_trips:Q")
-    )
-    peak_text = (
-        alt.Chart(peak_df)
-        .mark_text(align="left", dx=9, dy=-10, color=DANGER,
-                   fontWeight=600, fontSize=12, font="Inter")
-        .encode(x="hour:Q", y="effective_trips:Q", text="label")
-    )
+    peak_rule   = alt.Chart(peak_df).mark_rule(
+        color=cp["danger"], strokeDash=[3, 3], strokeWidth=1.2, opacity=0.75
+    ).encode(x="hour:Q")
+    peak_dot    = alt.Chart(peak_df).mark_point(
+        color=cp["danger"], size=160, shape="triangle-up", filled=True
+    ).encode(x="hour:Q", y="effective_trips:Q")
+    peak_text   = alt.Chart(peak_df).mark_text(
+        align="left", dx=8, dy=-10,
+        color=cp["danger"], fontWeight=600, fontSize=11, font="Inter"
+    ).encode(x="hour:Q", y="effective_trips:Q", text="label")
 
-    forecast_chart = (
+    demand_chart = (
         (area + dots + peak_rule + peak_dot + peak_text)
         .configure(background="transparent")
         .configure_view(strokeOpacity=0)
-        .properties(height=340)
+        .properties(height=330)
         .interactive()
     )
-    st.altair_chart(forecast_chart, use_container_width=True)
+    st.altair_chart(demand_chart, use_container_width=True)
 
-    # ── Context bar ───────────────────────────────────────────────────────────
-    rain_note  = (
-        f"Rain expected — {total_rain_mm:.1f} mm total"
-        if total_rain_mm > 0
-        else "No precipitation forecast"
-    )
-    events_note = (
-        "; ".join(day_events[:3])
-        if day_events
-        else "No major events scheduled in this zone"
-    )
+    rain_note   = (f"Rain expected — {total_rain_mm:.1f} mm total"
+                   if total_rain_mm > 0 else "No precipitation forecast")
+    events_note = "; ".join(day_events[:3]) if day_events else "No major events scheduled"
     st.markdown(
         f"""
         <div class="context-bar">
             <strong>Weather</strong>&ensp;{rain_note} &nbsp;·&nbsp;
-            Temperature {min_temp:.1f}°C – {max_temp:.1f}°C &emsp;
+            {min_temp:.1f}°C – {max_temp:.1f}°C &emsp;
             <strong>Events</strong>&ensp;{events_note}
         </div>
         """,
@@ -720,92 +870,62 @@ with tab1:
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    # ── Dispatch table ────────────────────────────────────────────────────────
     with st.expander("View full 24-hour dispatch schedule"):
         table_df = pd.DataFrame({
-            "Hour (EAT)":          day_forecast["hour_label"],
-            "Forecast Trips":       day_forecast["effective_trips"].round(1),
-            "Drivers":              (day_forecast["effective_trips"] / trips_per_driver).round(1),
-            "Revenue (ETB)":        (day_forecast["effective_trips"] * fare_per_trip).round(0).astype(int),
-            "Temp (°C)":            day_forecast["temp_c"].round(1),
-            "Rain (mm)":            day_forecast["rain_mm"].round(2),
+            "Hour (EAT)":       day_forecast["hour_label"],
+            "Forecast Trips":    day_forecast["effective_trips"].round(1),
+            "Drivers":           (day_forecast["effective_trips"] / trips_per_driver).round(1),
+            "Revenue (ETB)":     (day_forecast["effective_trips"] * fare_per_trip).round(0).astype(int),
+            "Temp (°C)":         day_forecast["temp_c"].round(1),
+            "Rain (mm)":         day_forecast["rain_mm"].round(2),
         })
         st.dataframe(table_df, use_container_width=True, hide_index=True)
-        csv_bytes = table_df.to_csv(index=False).encode("utf-8")
         st.download_button(
             "Download dispatch plan (.csv)",
-            data=csv_bytes,
+            data=table_df.to_csv(index=False).encode("utf-8"),
             file_name=f"dispatch_{selected_db_zone}_{selected_date.strftime('%Y%m%d')}.csv",
             mime="text/csv",
         )
 
 
 # =============================================================================
-# TAB 2 ─ MODEL EVALUATION
+# TAB 2 — MODEL EVALUATION
 # =============================================================================
 with tab2:
 
-    # Summary stats row
     st.markdown(
         """
         <div class="stat-row">
-            <div class="stat-item">
-                <div class="stat-number">15.72</div>
-                <div class="stat-label">Final RMSE</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">6.78</div>
-                <div class="stat-label">Final MAE</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">47.9%</div>
-                <div class="stat-label">RMSE vs. Mean Baseline</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">2.28 s</div>
-                <div class="stat-label">Training Time</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">28</div>
-                <div class="stat-label">Final Feature Count</div>
-            </div>
+            <div class="stat-item"><div class="stat-number">15.72</div><div class="stat-label">Final RMSE</div></div>
+            <div class="stat-item"><div class="stat-number">6.78</div><div class="stat-label">Final MAE</div></div>
+            <div class="stat-item"><div class="stat-number">47.9%</div><div class="stat-label">RMSE vs Mean Baseline</div></div>
+            <div class="stat-item"><div class="stat-number">2.28 s</div><div class="stat-label">Training Time</div></div>
+            <div class="stat-item"><div class="stat-number">28</div><div class="stat-label">Feature Count</div></div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ── Scoreboard + Chart ────────────────────────────────────────────────────
     sc1, sc2 = st.columns([3, 2])
 
     leaderboard_df = pd.DataFrame([
-        {"Model":           "LightGBM",
-         "RMSE": 15.72, "MAE": 6.78, "Fit Time (s)": 2.28,
-         "Champion": True},
-        {"Model":           "Random Forest",
-         "RMSE": 15.78, "MAE": 6.58, "Fit Time (s)": 25.24,
-         "Champion": False},
-        {"Model":           "HistGradient Boosting",
-         "RMSE": 15.78, "MAE": 6.88, "Fit Time (s)": 3.87,
-         "Champion": False},
-        {"Model":           "Seasonal Naive (baseline)",
-         "RMSE": 17.16, "MAE": 7.53, "Fit Time (s)": 0.01,
-         "Champion": False},
-        {"Model":           "Ridge Regression",
-         "RMSE": 25.44, "MAE": 16.87, "Fit Time (s)": 0.21,
-         "Champion": False},
-        {"Model":           "Global Mean",
-         "RMSE": 30.16, "MAE": 20.79, "Fit Time (s)": 0.01,
-         "Champion": False},
+        {"Model": "LightGBM",                "RMSE": 15.72, "MAE": 6.78, "Fit (s)": 2.28,  "Champion": True},
+        {"Model": "Random Forest",           "RMSE": 15.78, "MAE": 6.58, "Fit (s)": 25.24, "Champion": False},
+        {"Model": "HistGradient Boosting",   "RMSE": 15.78, "MAE": 6.88, "Fit (s)": 3.87,  "Champion": False},
+        {"Model": "Seasonal Naive",          "RMSE": 17.16, "MAE": 7.53, "Fit (s)": 0.01,  "Champion": False},
+        {"Model": "Ridge Regression",        "RMSE": 25.44, "MAE": 16.87,"Fit (s)": 0.21,  "Champion": False},
+        {"Model": "Global Mean",             "RMSE": 30.16, "MAE": 20.79,"Fit (s)": 0.01,  "Champion": False},
     ])
 
     with sc1:
-        st.markdown("<div class='section-heading'>Holdout Scoreboard — October 2025 (8,690 zone-hours)</div>", unsafe_allow_html=True)
-        display_df = leaderboard_df.drop(columns=["Champion"])
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        st.markdown(
+            "<div class='section-heading'>Holdout Scoreboard — October 2025 (8,690 zone-hours)</div>",
+            unsafe_allow_html=True,
+        )
+        st.dataframe(leaderboard_df.drop(columns=["Champion"]), use_container_width=True, hide_index=True)
         st.caption(
-            "LightGBM selected as final model: best RMSE, 10× faster than Random Forest, "
-            "with native categorical zone handling."
+            "LightGBM selected: best RMSE, 10× faster than Random Forest, "
+            "native categorical zone support."
         )
 
     with sc2:
@@ -815,16 +935,16 @@ with tab2:
             .mark_bar(cornerRadiusTopRight=4, cornerRadiusBottomRight=4)
             .encode(
                 x=alt.X("RMSE:Q", title="Validation RMSE",
-                         axis=alt.Axis(grid=True, gridColor="#1c2333",
-                                       labelColor="#8892a4", titleColor="#8892a4")),
+                         axis=alt.Axis(grid=True, gridColor=cp["grid"],
+                                       labelColor=cp["label"], titleColor=cp["label"])),
                 y=alt.Y("Model:N", sort="-x", title=None,
-                         axis=alt.Axis(labelColor="#8892a4")),
+                         axis=alt.Axis(labelColor=cp["label"])),
                 color=alt.condition(
                     alt.datum["Champion"],
-                    alt.value(ACCENT),
-                    alt.value(SLATE),
+                    alt.value(cp["accent"]),
+                    alt.value(cp["muted"]),
                 ),
-                tooltip=["Model", "RMSE", "MAE", "Fit Time (s)"],
+                tooltip=["Model", "RMSE", "MAE", "Fit (s)"],
             )
             .configure(background="transparent")
             .configure_view(strokeOpacity=0)
@@ -834,67 +954,57 @@ with tab2:
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
-    # ── CV + Ablation ─────────────────────────────────────────────────────────
     cv1, cv2 = st.columns(2)
-
     with cv1:
-        st.markdown("<div class='section-heading'>Rolling-Origin Cross-Validation (4 × 14-day folds)</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='section-heading'>Rolling-Origin CV — 4 × 14-day Folds</div>",
+            unsafe_allow_html=True,
+        )
         cv_df = pd.DataFrame([
-            {"Fold": 1, "Window": "Aug 18–31", "Train Rows": 62057,
-             "LightGBM RMSE": 10.97, "Naive RMSE": 12.84},
-            {"Fold": 2, "Window": "Sep 01–14", "Train Rows": 65991,
-             "LightGBM RMSE": 15.00, "Naive RMSE": 17.97},
-            {"Fold": 3, "Window": "Sep 15–28", "Train Rows": 69925,
-             "LightGBM RMSE": 12.94, "Naive RMSE": 15.22},
-            {"Fold": 4, "Window": "Sep 29–Oct 12", "Train Rows": 73848,
-             "LightGBM RMSE": 17.08, "Naive RMSE": 18.04},
+            {"Fold": 1, "Window": "Aug 18–31", "Train Rows": 62057, "LightGBM RMSE": 10.97, "Naive RMSE": 12.84},
+            {"Fold": 2, "Window": "Sep 01–14", "Train Rows": 65991, "LightGBM RMSE": 15.00, "Naive RMSE": 17.97},
+            {"Fold": 3, "Window": "Sep 15–28", "Train Rows": 69925, "LightGBM RMSE": 12.94, "Naive RMSE": 15.22},
+            {"Fold": 4, "Window": "Sep 29–Oct 12","Train Rows": 73848,"LightGBM RMSE": 17.08, "Naive RMSE": 18.04},
         ])
         st.dataframe(cv_df, use_container_width=True, hide_index=True)
         st.success("LightGBM won every fold · Aggregate **13.998 ± 2.633 RMSE**")
 
     with cv2:
-        st.markdown("<div class='section-heading'>Feature Group Ablation</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='section-heading'>Feature Group Ablation</div>",
+            unsafe_allow_html=True,
+        )
         abl_df = pd.DataFrame([
-            {"Feature Group": "Calendar + Zone + Trend (base)",
-             "n Features": 8,  "RMSE": 16.92, "Δ RMSE": "—"},
-            {"Feature Group": "+ Weather (temp, rain, humidity)",
-             "n Features": 15, "RMSE": 15.99, "Δ RMSE": "−0.93"},
-            {"Feature Group": "+ Event windows (lead/lag)",
-             "n Features": 21, "RMSE": 16.72, "Δ RMSE": "−0.20"},
-            {"Feature Group": "+ Combined (weather + events)",
-             "n Features": 28, "RMSE": 15.72, "Δ RMSE": "−1.20"},
+            {"Feature Group": "Calendar + Zone + Trend",     "Features": 8,  "RMSE": 16.92, "Δ RMSE": "—"},
+            {"Feature Group": "+ Weather (temp, rain, RH)",  "Features": 15, "RMSE": 15.99, "Δ RMSE": "−0.93"},
+            {"Feature Group": "+ Event windows (lead/lag)",  "Features": 21, "RMSE": 16.72, "Δ RMSE": "−0.20"},
+            {"Feature Group": "+ Combined (weather + events)","Features": 28, "RMSE": 15.72, "Δ RMSE": "−1.20"},
         ])
         st.dataframe(abl_df, use_container_width=True, hide_index=True)
         st.info("Weather integration delivers the largest single lift (−0.93 RMSE).")
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
-
-    # ── Leakage audit ─────────────────────────────────────────────────────────
     st.markdown("<div class='section-heading'>Production Leakage Audit</div>", unsafe_allow_html=True)
     la1, la2 = st.columns([2, 1])
     with la1:
         st.markdown(
-            """
-            In live dispatch, fields like `avg_fare_birr`, `avg_wait_min`, and `active_drivers`
-            are **outcomes of demand**, not predictors. Including them artificially inflated
-            holdout RMSE by **19.9%** (13.55 vs 16.92). All three were excluded from all
-            feature tables after a full audit, ensuring the model is production-safe.
-            """
+            "Fields like `avg_fare_birr`, `avg_wait_min`, and `active_drivers` are **outcomes** of demand, "
+            "not predictors. Including them inflated holdout RMSE by **19.9%** (13.55 vs 16.92). "
+            "All three were excluded after a full audit, ensuring the model is production-safe."
         )
     with la2:
-        leakage_table = pd.DataFrame([
-            {"Feature":         "avg_fare_birr",  "Available Pre-Dispatch": "No"},
-            {"Feature":         "avg_wait_min",   "Available Pre-Dispatch": "No"},
-            {"Feature":         "active_drivers", "Available Pre-Dispatch": "No"},
-            {"Feature":         "hour",           "Available Pre-Dispatch": "Yes"},
-            {"Feature":         "temp_c (forecast)", "Available Pre-Dispatch": "Yes"},
-            {"Feature":         "event_any",      "Available Pre-Dispatch": "Yes"},
-        ])
-        st.dataframe(leakage_table, use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame([
+            {"Feature": "avg_fare_birr",     "Pre-dispatch?": "✗ No"},
+            {"Feature": "avg_wait_min",      "Pre-dispatch?": "✗ No"},
+            {"Feature": "active_drivers",    "Pre-dispatch?": "✗ No"},
+            {"Feature": "hour",              "Pre-dispatch?": "✓ Yes"},
+            {"Feature": "temp_c (forecast)", "Pre-dispatch?": "✓ Yes"},
+            {"Feature": "event_any",         "Pre-dispatch?": "✓ Yes"},
+        ]), use_container_width=True, hide_index=True)
 
 
 # =============================================================================
-# TAB 3 ─ EDA INSIGHTS
+# TAB 3 — EDA INSIGHTS
 # =============================================================================
 with tab3:
 
@@ -903,69 +1013,51 @@ with tab3:
         unsafe_allow_html=True,
     )
 
-    def eda_card(col, fig_name: str, number: str, title: str, takeaway: str):
-        fig_path = FIGURES_DIR / fig_name
+    def eda_figure(col, fig_name, number, title, takeaway):
         with col:
             st.markdown(f"**{number} — {title}**")
-            if fig_path.exists():
-                st.image(str(fig_path), use_container_width=True)
+            p = FIGURES_DIR / fig_name
+            if p.exists():
+                st.image(str(p), use_container_width=True)
             st.caption(takeaway)
 
-    r1c1, r1c2 = st.columns(2)
-    eda_card(
-        r1c1,
-        "fig06_weather_timezone_check.png",
-        "01", "UTC → EAT Timezone Correction",
-        "Raw weather peaked at 11:00 UTC. Empirical solar alignment proved the sensor "
-        "stream was UTC — a +3 h shift to EAT was mandatory for model accuracy.",
-    )
-    eda_card(
-        r1c2,
-        "fig07_rain_effect.png",
-        "02", "Non-Linear Rain Surge",
-        "Light-to-moderate rain drove a 15–30% demand lift as commuters sought shelter, "
-        "while heavy rainfall caused saturation and cancellations — a key non-linearity.",
-    )
+    r1a, r1b = st.columns(2)
+    eda_figure(r1a, "fig06_weather_timezone_check.png", "01",
+               "UTC → EAT Timezone Correction",
+               "Raw weather peaked at 11:00 UTC. Solar alignment proved a mandatory "
+               "+3 h shift to East Africa Time was needed for model accuracy.")
+    eda_figure(r1b, "fig07_rain_effect.png", "02",
+               "Non-Linear Rain Surge",
+               "Light-to-moderate rain drove a 15–30% demand lift; heavy rainfall caused "
+               "saturation and cancellations — a critical non-linearity for feature design.")
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
-    r2c1, r2c2 = st.columns(2)
-    eda_card(
-        r2c1,
-        "fig08_event_study.png",
-        "03", "Asymmetric Event Surge Windows",
-        "Pre-event arrivals build gradually over 3 h; post-event departures create a sharp "
-        "1.55× surge compressed into 2 h — motivating separate lead and lag feature columns.",
-    )
-    eda_card(
-        r2c2,
-        "fig04_hour_by_weekday_heatmap.png",
-        "04", "Commercial vs. Residential Diurnal Patterns",
-        "Merkato and Kazanchis show clear dual commute peaks (08:00 & 18:00), while Bole "
-        "sustains strong late-night weekend demand from airport and hospitality traffic.",
-    )
+    r2a, r2b = st.columns(2)
+    eda_figure(r2a, "fig08_event_study.png", "03",
+               "Asymmetric Event Surge Windows",
+               "Pre-event arrivals build gradually; post-event departures create a sharp "
+               "1.55× surge in 2 hours — motivating separate lead and lag feature columns.")
+    eda_figure(r2b, "fig04_hour_by_weekday_heatmap.png", "04",
+               "Commercial vs. Residential Diurnal Patterns",
+               "Merkato and Kazanchis show dual commute peaks (08:00 & 18:00); Bole "
+               "sustains strong late-night weekend demand from airport and hospitality traffic.")
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
-    r3c1, r3c2 = st.columns(2)
-    eda_card(
-        r3c1,
-        "fig03_demand_trend_with_holidays.png",
-        "05", "Holiday Depression Effects",
-        "Major religious holidays (Timkat, Meskel, Genna) depressed daily trips by 20–35%, "
-        "requiring explicit negative seasonal adjustments in the calendar feature set.",
-    )
-    eda_card(
-        r3c2,
-        "fig12_feature_importance.png",
-        "06", "LightGBM Feature Importance",
-        "Hour of day, zone identity, and weekday type dominate the importance ranking, "
-        "with temperature and event-active windows contributing the primary external lift.",
-    )
+    r3a, r3b = st.columns(2)
+    eda_figure(r3a, "fig03_demand_trend_with_holidays.png", "05",
+               "Holiday Depression Effects",
+               "Religious holidays (Timkat, Meskel, Genna) depressed daily trips by 20–35%, "
+               "requiring negative seasonal adjustments in the calendar feature set.")
+    eda_figure(r3b, "fig12_feature_importance.png", "06",
+               "LightGBM Feature Importance",
+               "Hour, zone identity, and weekday type dominate the importance ranking; "
+               "temperature and event-active windows contribute the primary external lift.")
 
 
 # =============================================================================
-# TAB 4 ─ ABOUT THE AUTHOR
+# TAB 4 — ABOUT THE AUTHOR
 # =============================================================================
 with tab4:
 
@@ -980,23 +1072,21 @@ with tab4:
                 <div class="profile-bio">
                     Led an interdisciplinary team through the full data science lifecycle —
                     from raw sensor ingestion and UTC timezone resolution to LightGBM
-                    hyperparameter search and live Streamlit deployment. Specialises in
-                    production-safe time-series modeling with strict leakage prevention and
-                    interpretable operational dashboards.
+                    hyperparameter search and live Streamlit deployment.<br><br>
+                    Specialises in production-safe time-series modeling with strict leakage
+                    prevention and interpretable operational dashboards.
                 </div>
-                <div class="profile-skills-title">Demonstrated Competencies</div>
-                <div class="profile-skill-item">→ End-to-end Time-Series Forecasting</div>
-                <div class="profile-skill-item">→ LightGBM Optimization &amp; Feature Ablation</div>
-                <div class="profile-skill-item">→ Leakage-Proof Rolling-Origin CV Design</div>
-                <div class="profile-skill-item">→ Multi-Source Data Integration (Weather + Events)</div>
-                <div class="profile-skill-item">→ Operational ML Dashboards (Streamlit)</div>
+                <div class="profile-skills-label">Demonstrated Competencies</div>
+                <div class="profile-skill-row">→ End-to-end Time-Series Forecasting</div>
+                <div class="profile-skill-row">→ LightGBM Optimization &amp; Feature Ablation</div>
+                <div class="profile-skill-row">→ Leakage-Proof Rolling-Origin CV Design</div>
+                <div class="profile-skill-row">→ Multi-Source Data Integration (Weather + Events)</div>
+                <div class="profile-skill-row">→ Operational ML Dashboards (Streamlit)</div>
                 <br>
-                <a href="https://github.com/samuelmitiku393/team_quatro" target="_blank" class="link-btn link-btn-blue">
-                    ↗ GitHub Project
-                </a>
-                <a href="https://linkedin.com" target="_blank" class="link-btn link-btn-green">
-                    ↗ LinkedIn Profile
-                </a>
+                <a href="https://github.com/samuelmitiku393/team_quatro"
+                   target="_blank" class="link-btn link-btn-blue">↗ GitHub Project</a>
+                <a href="https://linkedin.com"
+                   target="_blank" class="link-btn link-btn-green">↗ LinkedIn Profile</a>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1015,7 +1105,7 @@ with tab4:
             └───────────────────────┬─────────────────────────────────────────┘
                                     │
             ┌───────────────────────▼─────────────────────────────────────────┐
-            │  Data Engineering Layer                                          │
+            │  Data Engineering                                                │
             │  ├─ Timestamp normalization & deduplication (cleaning.py)        │
             │  ├─ UTC → EAT (+3 h) conversion & weather join (integration.py)  │
             │  └─ Asymmetric event lead/lag windows & leakage audit            │
@@ -1029,57 +1119,53 @@ with tab4:
             └───────────────────────┬─────────────────────────────────────────┘
                                     │
             ┌───────────────────────▼─────────────────────────────────────────┐
-            │  Model Training (train.py)                                       │
-            │  ├─ Rolling-origin CV, 4 × 14-day folds, zero future leakage    │
-            │  ├─ Ablation: calendar → +weather → +events → combined          │
-            │  └─ RandomizedSearchCV, 15 trials, TimeSeriesSplit(3)           │
+            │  LightGBM Regressor  ·  RMSE 15.72  ·  MAE 6.78                │
+            │  num_leaves=127 · lr=0.02 · colsample=0.9 · subsample=1.0      │
+            │  Rolling-origin CV · 4 × 14-day folds · zero future leakage    │
             └───────────────────────┬─────────────────────────────────────────┘
                                     │
             ┌───────────────────────▼─────────────────────────────────────────┐
-            │  LightGBM Regressor  (RMSE 15.72, MAE 6.78)                     │
-            │  num_leaves=127  ·  lr=0.02  ·  colsample=0.9  ·  subsample=1  │
-            └───────────────────────┬─────────────────────────────────────────┘
-                                    │
-            ┌───────────────────────▼─────────────────────────────────────────┐
-            │  Streamlit Dashboard (app.py)                                    │
+            │  Streamlit Dashboard                                             │
             │  ├─ Zone + date selector → 24-hour demand curve                 │
             │  ├─ Fleet sizing & revenue projection (adjustable parameters)    │
-            │  └─ Scenario stress testing, weather & events context lookup    │
+            │  ├─ Scenario stress testing & weather/events context lookup     │
+            │  └─ Light / System / Dark theme toggle                          │
             └─────────────────────────────────────────────────────────────────┘
             ```
             """
         )
 
         st.markdown("<div class='section-heading'>Technology Stack</div>", unsafe_allow_html=True)
-        tech_c1, tech_c2 = st.columns(2)
-        with tech_c1:
+        tc1, tc2 = st.columns(2)
+        with tc1:
             st.markdown(
                 """
                 **Modeling**
                 - LightGBM, Scikit-Learn
-                - Joblib (model serialisation)
+                - Joblib (serialisation)
                 - Pandas, NumPy
 
                 **Validation**
                 - Rolling-origin time-series CV
-                - RandomizedSearchCV
+                - RandomizedSearchCV (15 trials)
                 - Chronological train/holdout splits
                 """
             )
-        with tech_c2:
+        with tc2:
             st.markdown(
                 """
                 **Interface & Visualisation**
-                - Streamlit (dashboard framework)
-                - Altair (declarative charts)
+                - Streamlit (dashboard)
+                - Altair (interactive charts)
                 - Matplotlib (static figures)
 
                 **Deployment**
                 - Streamlit Community Cloud
-                - GitHub Actions CI/CD
                 - Docker-compatible
+                - GitHub Actions CI/CD
                 """
             )
+
 
 # -----------------------------------------------------------------------------
 # FOOTER
